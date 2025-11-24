@@ -1,0 +1,7 @@
+{
+  "name": "dagger-version-manager",
+  "engineVersion": "v0.19.7",
+  "sdk": {
+    "source": "python"
+  }
+}

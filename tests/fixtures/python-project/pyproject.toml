@@ -1,0 +1,5 @@
+[project]
+name = "test-project"
+version = "1.0.0"
+description = "Test project for version manager"
+requires-python = ">=3.11"
