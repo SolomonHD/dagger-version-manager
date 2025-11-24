@@ -38,10 +38,12 @@ dagger install github.com/SolomonHD/dagger-version-manager@v1.0.1
 
 ## Quick Start
 
+> **Note:** These examples assume you've installed the module in your project using `dagger install`. If you're developing locally within this repository, omit the `-m version-manager` flag. For remote usage without installation, use the full GitHub URL pattern (see [EXAMPLES.md](EXAMPLES.md) for details).
+
 ### 1. Get Current Version
 
 ```bash
-dagger call version-manager get-version
+dagger call -m version-manager get-version
 # Output: 1.2.3
 ```
 
@@ -49,10 +51,10 @@ dagger call version-manager get-version
 
 ```bash
 # Sync VERSION to galaxy.yml (default)
-dagger call version-manager sync-version export --path=.
+dagger call -m version-manager sync-version export --path=.
 
 # Sync to custom file with custom pattern
-dagger call version-manager sync-version \
+dagger call -m version-manager sync-version \
   --target-file=pyproject.toml \
   --version-pattern='^version\s*=\s*".*"' \
   export --path=.
@@ -61,7 +63,7 @@ dagger call version-manager sync-version \
 ### 3. Validate Version Consistency
 
 ```bash
-dagger call version-manager validate-version
+dagger call -m version-manager validate-version
 # Output: ✅ Version 1.2.3 is consistent
 # Or: ⚠️  Mismatch: VERSION=1.2.3, galaxy.yml=1.0.0
 ```
@@ -70,13 +72,13 @@ dagger call version-manager validate-version
 
 ```bash
 # Bump patch: 1.2.3 → 1.2.4
-dagger call version-manager bump-version --bump-type=patch export --path=.
+dagger call -m version-manager bump-version --bump-type=patch export --path=.
 ```
 
 ### 5. Complete Release Workflow
 
 ```bash
-dagger call version-manager release
+dagger call -m version-manager release
 ```
 
 Output:
@@ -95,6 +97,33 @@ Next steps (run these commands manually):
 
 Note: Review changes before committing!
 ```
+
+## Usage Contexts
+
+The Dagger Version Manager can be called in three different ways depending on your context:
+
+### Context A: Local Development
+When working **inside** the dagger-version-manager repository:
+```bash
+dagger call get-version
+dagger call sync-version export --path=.
+```
+No `-m` flag is needed.
+
+### Context B: Installed Module
+After installing in another project with `dagger install`:
+```bash
+dagger call -m version-manager get-version
+dagger call -m version-manager sync-version export --path=.
+```
+Use `-m version-manager` (the module name from [`dagger.json`](dagger.json)).
+
+### Context C: Remote Module
+Calling directly without installation:
+```bash
+dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.2 version-manager get-version
+```
+Use `-m <repo-url>@<version> <module-name>` pattern.
 
 ## Documentation
 
