@@ -33,17 +33,19 @@ dagger install github.com/SolomonHD/dagger-version-manager@main
 Or install a specific version:
 
 ```bash
-dagger install github.com/SolomonHD/dagger-version-manager@v1.0.3
+dagger install github.com/SolomonHD/dagger-version-manager@v1.1.0
 ```
 
 ## Quick Start
+
+> **Important:** The `--source=.` parameter is **required** for all module functions to specify your project directory. This ensures the module always operates on the correct files.
 
 > **Note:** These examples assume you've installed the module in your project using `dagger install`. If you're developing locally within this repository, omit the `-m version-manager` flag. For remote usage without installation, use the full GitHub URL pattern (see [EXAMPLES.md](EXAMPLES.md) for details).
 
 ### 1. Get Current Version
 
 ```bash
-dagger call -m version-manager get-version
+dagger call -m version-manager get-version --source=.
 # Output: 1.2.3
 ```
 
@@ -51,10 +53,11 @@ dagger call -m version-manager get-version
 
 ```bash
 # Sync VERSION to galaxy.yml (default)
-dagger call -m version-manager sync-version export --path=.
+dagger call -m version-manager sync-version --source=. export --path=.
 
 # Sync to custom file with custom pattern
 dagger call -m version-manager sync-version \
+  --source=. \
   --target-file=pyproject.toml \
   --version-pattern='^version\s*=\s*".*"' \
   export --path=.
@@ -63,7 +66,7 @@ dagger call -m version-manager sync-version \
 ### 3. Validate Version Consistency
 
 ```bash
-dagger call -m version-manager validate-version
+dagger call -m version-manager validate-version --source=.
 # Output: ✅ Version 1.2.3 is consistent
 # Or: ⚠️  Mismatch: VERSION=1.2.3, galaxy.yml=1.0.0
 ```
@@ -72,13 +75,13 @@ dagger call -m version-manager validate-version
 
 ```bash
 # Bump patch: 1.2.3 → 1.2.4
-dagger call -m version-manager bump-version --bump-type=patch export --path=.
+dagger call -m version-manager bump-version --source=. --bump-type=patch export --path=.
 ```
 
 ### 5. Complete Release Workflow
 
 ```bash
-dagger call -m version-manager release
+dagger call -m version-manager release --source=.
 ```
 
 Output:
@@ -105,25 +108,25 @@ The Dagger Version Manager can be called in three different ways depending on yo
 ### Context A: Local Development
 When working **inside** the dagger-version-manager repository:
 ```bash
-dagger call get-version
-dagger call sync-version export --path=.
+dagger call get-version --source=.
+dagger call sync-version --source=. export --path=.
 ```
-No `-m` flag is needed.
+No `-m` flag needed, but `--source=.` is still required.
 
 ### Context B: Installed Module
 After installing in another project with `dagger install`:
 ```bash
-dagger call -m version-manager get-version
-dagger call -m version-manager sync-version export --path=.
+dagger call -m version-manager get-version --source=.
+dagger call -m version-manager sync-version --source=. export --path=.
 ```
-Use `-m version-manager` (the module name from [`dagger.json`](dagger.json)).
+Use `-m version-manager` (the module name from [`dagger.json`](dagger.json)) and `--source=.` to specify your project directory.
 
 ### Context C: Remote Module
 Calling directly without installation:
 ```bash
-dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 version-manager get-version
+dagger call -m github.com/SolomonHD/dagger-version-manager@v1.1.0 version-manager get-version --source=.
 ```
-Use `-m <repo-url>@<version> <module-name>` pattern.
+Use `-m <repo-url>@<version> <module-name>` pattern with `--source=.`.
 
 ## Documentation
 

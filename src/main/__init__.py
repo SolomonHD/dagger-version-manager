@@ -17,20 +17,6 @@ class VersionManager:
     for projects that maintain version numbers in multiple files (e.g., VERSION + galaxy.yml).
     """
 
-    async def _get_source(self, source: Optional[dagger.Directory] = None) -> dagger.Directory:
-        """
-        Get the source directory, defaulting to current module source if not provided.
-        
-        Args:
-            source: Optional directory to use instead of current module source
-            
-        Returns:
-            Directory object to work with
-        """
-        if source is None:
-            return await dagger.dag.current_module().source()
-        return source
-
     def _validate_semver(self, version: str) -> tuple[bool, str]:
         """
         Validate semantic version format (X.Y.Z).
@@ -130,9 +116,9 @@ class VersionManager:
     async def get_version(
         self,
         source: Annotated[
-            Optional[dagger.Directory],
-            Doc("Source directory containing version file (defaults to current module)")
-        ] = None,
+            dagger.Directory,
+            Doc("Source directory containing version file (use --source=. for your project)")
+        ],
         version_file: Annotated[
             str,
             Doc("Name of the version file")
@@ -142,18 +128,17 @@ class VersionManager:
         Read and return the current version from the version file.
         
         Args:
-            source: Source directory (defaults to current module source)
+            source: Source directory (required, use --source=. for your project)
             version_file: Name of the version file (default: VERSION)
             
         Returns:
             Version string or error message
             
         Example:
-            dagger call get-version
-            dagger call get-version --version-file=MY_VERSION
+            dagger call get-version --source=.
+            dagger call get-version --source=. --version-file=MY_VERSION
         """
-        src = await self._get_source(source)
-        version, error = await self._read_version_file(src, version_file)
+        version, error = await self._read_version_file(source, version_file)
         
         if error:
             return error
@@ -164,9 +149,9 @@ class VersionManager:
     async def validate_version(
         self,
         source: Annotated[
-            Optional[dagger.Directory],
-            Doc("Source directory containing version files (defaults to current module)")
-        ] = None,
+            dagger.Directory,
+            Doc("Source directory containing version files (use --source=. for your project)")
+        ],
         version_file: Annotated[
             str,
             Doc("Name of the source version file")
@@ -184,7 +169,7 @@ class VersionManager:
         Validate that version in source file matches version in target file.
         
         Args:
-            source: Source directory (defaults to current module source)
+            source: Source directory (required, use --source=. for your project)
             version_file: Name of the source version file (default: VERSION)
             target_file: Name of the target file to check (default: galaxy.yml)
             version_pattern: Regex pattern to match version line (default: r'^version:.*$')
@@ -193,19 +178,17 @@ class VersionManager:
             Validation result message
             
         Example:
-            dagger call validate-version
-            dagger call validate-version --target-file=pyproject.toml --version-pattern='^version\s*=\s*".*"'
+            dagger call validate-version --source=.
+            dagger call validate-version --source=. --target-file=pyproject.toml --version-pattern='^version\s*=\s*".*"'
         """
-        src = await self._get_source(source)
-        
         # Read source version
-        source_version, error = await self._read_version_file(src, version_file)
+        source_version, error = await self._read_version_file(source, version_file)
         if error:
             return error
         
         # Read target file
         try:
-            target_content = await src.file(target_file).contents()
+            target_content = await source.file(target_file).contents()
         except Exception as e:
             return (
                 f"❌ Failed to read {target_file}: {str(e)}\n"
@@ -234,9 +217,9 @@ class VersionManager:
     async def sync_version(
         self,
         source: Annotated[
-            Optional[dagger.Directory],
-            Doc("Source directory containing version files (defaults to current module)")
-        ] = None,
+            dagger.Directory,
+            Doc("Source directory containing version files (use --source=. for your project)")
+        ],
         version_file: Annotated[
             str,
             Doc("Name of the source version file")
@@ -257,7 +240,7 @@ class VersionManager:
         according to the specified pattern.
         
         Args:
-            source: Source directory (defaults to current module source)
+            source: Source directory (required, use --source=. for your project)
             version_file: Name of the source version file (default: VERSION)
             target_file: Name of the target file to update (default: galaxy.yml)
             version_pattern: Regex pattern to match version line (default: r'^version:.*$')
@@ -266,19 +249,17 @@ class VersionManager:
             Updated directory with synced version
             
         Example:
-            dagger call sync-version export --path=.
-            dagger call sync-version --target-file=pyproject.toml --version-pattern='^version\s*=\s*".*"' export --path=.
+            dagger call sync-version --source=. export --path=.
+            dagger call sync-version --source=. --target-file=pyproject.toml --version-pattern='^version\s*=\s*".*"' export --path=.
         """
-        src = await self._get_source(source)
-        
         # Read source version
-        source_version, error = await self._read_version_file(src, version_file)
+        source_version, error = await self._read_version_file(source, version_file)
         if error:
             raise Exception(error)
         
         # Read target file
         try:
-            target_content = await src.file(target_file).contents()
+            target_content = await source.file(target_file).contents()
         except Exception as e:
             raise Exception(
                 f"❌ Failed to read {target_file}: {str(e)}\n"
@@ -319,21 +300,21 @@ class VersionManager:
         
         # Write updated content back
         new_content = '\n'.join(lines)
-        updated_dir = src.with_new_file(target_file, new_content)
+        updated_dir = source.with_new_file(target_file, new_content)
         
         return updated_dir
 
     @function
     async def bump_version(
         self,
+        source: Annotated[
+            dagger.Directory,
+            Doc("Source directory containing version file (use --source=. for your project)")
+        ],
         bump_type: Annotated[
             str,
             Doc("Type of version bump: major, minor, or patch")
         ],
-        source: Annotated[
-            Optional[dagger.Directory],
-            Doc("Source directory containing version file (defaults to current module)")
-        ] = None,
         version_file: Annotated[
             str,
             Doc("Name of the version file to update")
@@ -347,22 +328,20 @@ class VersionManager:
         - patch: X.Y.Z → X.Y.(Z+1)
         
         Args:
+            source: Source directory (required, use --source=. for your project)
             bump_type: Type of bump (major, minor, or patch)
-            source: Source directory (defaults to current module source)
             version_file: Name of the version file (default: VERSION)
             
         Returns:
             Updated directory with bumped version
             
         Example:
-            dagger call bump-version --bump-type=patch export --path=.
-            dagger call bump-version --bump-type=minor export --path=.
-            dagger call bump-version --bump-type=major export --path=.
+            dagger call bump-version --source=. --bump-type=patch export --path=.
+            dagger call bump-version --source=. --bump-type=minor export --path=.
+            dagger call bump-version --source=. --bump-type=major export --path=.
         """
-        src = await self._get_source(source)
-        
         # Read current version
-        current_version, error = await self._read_version_file(src, version_file)
+        current_version, error = await self._read_version_file(source, version_file)
         if error:
             raise Exception(error)
         
@@ -372,7 +351,7 @@ class VersionManager:
             raise Exception(error)
         
         # Write new version
-        updated_dir = src.with_new_file(version_file, new_version)
+        updated_dir = source.with_new_file(version_file, new_version)
         
         return updated_dir
 
@@ -380,9 +359,9 @@ class VersionManager:
     async def release(
         self,
         source: Annotated[
-            Optional[dagger.Directory],
-            Doc("Source directory containing version files (defaults to current module)")
-        ] = None,
+            dagger.Directory,
+            Doc("Source directory containing version files (use --source=. for your project)")
+        ],
         version_file: Annotated[
             str,
             Doc("Name of the source version file")
@@ -409,7 +388,7 @@ class VersionManager:
         3. Generating git commands for manual execution
         
         Args:
-            source: Source directory (defaults to current module source)
+            source: Source directory (required, use --source=. for your project)
             version_file: Name of the source version file (default: VERSION)
             target_file: Name of the target file to sync (default: galaxy.yml)
             version_pattern: Regex pattern to match version line
@@ -419,20 +398,18 @@ class VersionManager:
             Release instructions with git commands
             
         Example:
-            dagger call release
-            dagger call release --tag-message="Major release with breaking changes"
+            dagger call release --source=.
+            dagger call release --source=. --tag-message="Major release with breaking changes"
         """
-        src = await self._get_source(source)
-        
         # Read version
-        version, error = await self._read_version_file(src, version_file)
+        version, error = await self._read_version_file(source, version_file)
         if error:
             return error
         
         # Sync version
         try:
             updated_src = await self.sync_version(
-                source=src,
+                source=source,
                 version_file=version_file,
                 target_file=target_file,
                 version_pattern=version_pattern
@@ -571,9 +548,9 @@ exit 0
     async def setup_git_hooks(
         self,
         source: Annotated[
-            Optional[dagger.Directory],
-            Doc("Source directory containing project files (defaults to current module)")
-        ] = None
+            dagger.Directory,
+            Doc("Source directory containing project files (use --source=. for your project)")
+        ]
     ) -> dagger.Directory:
         """
         Install git hooks for automated version validation.
@@ -588,7 +565,7 @@ exit 0
         - Suggest sync commands to fix issues
         
         Args:
-            source: Source directory (defaults to current module source)
+            source: Source directory (required, use --source=. for your project)
             
         Returns:
             Updated directory with git hooks installed
@@ -599,11 +576,10 @@ exit 0
         Example:
             dagger call setup-git-hooks --source=. export --path=.
         """
-        src = await self._get_source(source)
         
         # Check for .git directory
         try:
-            await src.directory(".git").entries()
+            await source.directory(".git").entries()
         except Exception:
             raise Exception(
                 "❌ Git repository not found (.git directory missing)\n"
@@ -612,7 +588,7 @@ exit 0
         
         # Check if this is a Dagger module project
         try:
-            await src.file("dagger.json").contents()
+            await source.file("dagger.json").contents()
             # This is a Dagger module - skip hook installation
             raise Exception(
                 "ℹ️  Detected Dagger module project\n"
@@ -634,7 +610,7 @@ exit 0
             pass
         
         # Detect project type
-        project_type, target_file, version_pattern = await self._detect_project_type(src)
+        project_type, target_file, version_pattern = await self._detect_project_type(source)
         
         if not project_type:
             raise Exception(
@@ -647,7 +623,7 @@ exit 0
             )
         
         # Get current version for metadata
-        version, error = await self._read_version_file(src, "VERSION")
+        version, error = await self._read_version_file(source, "VERSION")
         if error:
             raise Exception(error)
         
@@ -658,7 +634,7 @@ exit 0
         ]
         
         warnings = []
-        updated_dir = src
+        updated_dir = source
         
         for hook_path, hook_type in hooks_to_install:
             exists, is_managed = await self._check_existing_hook(updated_dir, hook_path)
