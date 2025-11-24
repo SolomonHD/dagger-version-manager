@@ -33,7 +33,7 @@ dagger install github.com/SolomonHD/dagger-version-manager@main
 Or install a specific version:
 
 ```bash
-dagger install github.com/SolomonHD/dagger-version-manager@v1.0.1
+dagger install github.com/SolomonHD/dagger-version-manager@v1.0.3
 ```
 
 ## Quick Start
@@ -121,7 +121,7 @@ Use `-m version-manager` (the module name from [`dagger.json`](dagger.json)).
 ### Context C: Remote Module
 Calling directly without installation:
 ```bash
-dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.2 version-manager get-version
+dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 version-manager get-version
 ```
 Use `-m <repo-url>@<version> <module-name>` pattern.
 

@@ -12,7 +12,7 @@ The system SHALL be installable as a Dagger dependency from a git repository and
 
 #### Scenario: Install specific version
 
-- **WHEN** a user runs `dagger install github.com/org/dagger-version-manager@v1.0.2`
+- **WHEN** a user runs `dagger install github.com/org/dagger-version-manager@v1.0.3`
 - **THEN** the specific tagged version is installed
 - **AND** functions work as documented for that version
 
@@ -32,7 +32,7 @@ The system SHALL be installable as a Dagger dependency from a git repository and
 
 #### Scenario: Call functions remotely without installation
 
-- **WHEN** user runs `dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.2 version-manager get-version`
+- **WHEN** user runs `dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 version-manager get-version`
 - **THEN** the function executes successfully without prior installation
 - **AND** returns the version from the user's project
 
@@ -79,13 +79,13 @@ The system SHALL maintain version number consistency across the VERSION file and
 #### Scenario: Version bump updates VERSION file
 
 - **WHEN** a new release version 1.0.2 is prepared
-- **THEN** the VERSION file SHALL contain `1.0.2`
-- **AND** documentation references to specific versions SHALL use `v1.0.2` format for git tags
-- **AND** installation examples SHALL reference `@v1.0.2` or `@main` appropriately
+- **THEN** the VERSION file SHALL contain `1.0.3`
+- **AND** documentation references to specific versions SHALL use `v1.0.3` format for git tags
+- **AND** installation examples SHALL reference `@v1.0.3` or `@main` appropriately
 
 #### Scenario: Documentation version examples use actual version
 
 - **WHEN** documentation provides installation or usage examples
-- **THEN** examples SHALL use actual version numbers from VERSION file (e.g., `v1.0.2`)
+- **THEN** examples SHALL use actual version numbers from VERSION file (e.g., `v1.0.3`)
 - **AND** SHALL NOT use placeholder versions like `v1.0.0` or `vX.Y.Z`
 - **AND** generic examples may use `@main` to indicate latest development version

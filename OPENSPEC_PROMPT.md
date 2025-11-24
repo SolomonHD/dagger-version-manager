@@ -39,7 +39,7 @@ Use `-m version-manager` (the module name from dagger.json).
 
 **C. Remote Module (calling without installing):**
 ```bash
-dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.1 version-manager get-version
+dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 version-manager get-version
 ```
 Use `-m <repo-url>@<version> <module-name>` (both source and module name).
 

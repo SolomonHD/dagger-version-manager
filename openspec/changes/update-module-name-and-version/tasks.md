@@ -20,7 +20,7 @@
 - [x] 3.5 Update Advanced Workflows section (lines 590-743) to use `-m version-manager`
 - [x] 3.6 Update Git Hooks manual setup (lines 547, 573) to use `-m version-manager`
 - [x] 3.7 Update Makefiles Integration (lines 703-724) to use `-m version-manager`
-- [x] 3.8 Verified and updated CI/CD examples version references from v1.0.1 to v1.0.2
+- [x] 3.8 Verified and updated CI/CD examples version references from v1.0.1 to v1.0.3
 
 ## 4. Validation
 - [x] 4.1 All implementation tasks completed successfully

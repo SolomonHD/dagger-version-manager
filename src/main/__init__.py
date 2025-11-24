@@ -9,7 +9,7 @@ from dagger import Doc, function, object_type
 
 
 @object_type
-class DaggerVersionManager:
+class VersionManager:
     """
     Dagger module for managing semantic versions across multiple configuration files.
     

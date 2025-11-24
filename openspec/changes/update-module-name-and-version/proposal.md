@@ -23,4 +23,4 @@ The Dagger module name in `dagger.json` is currently `"dagger-version-manager"`,
   - `README.md` (Quick Start section, potentially new Usage Contexts section)
   - `EXAMPLES.md` (multiple sections with local-style examples)
 - **Breaking Change**: Users who installed the module with the old name will need to reinstall
-- **Migration**: Users should run `dagger install github.com/SolomonHD/dagger-version-manager@v1.0.2` after this release
+- **Migration**: Users should run `dagger install github.com/SolomonHD/dagger-version-manager@v1.0.3` after this release

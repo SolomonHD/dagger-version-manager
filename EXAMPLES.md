@@ -275,17 +275,17 @@ jobs:
       - name: Get version
         id: version
         run: |
-          VERSION=$(dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.2 version-manager get-version)
+          VERSION=$(dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 version-manager get-version)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
       
       - name: Validate version consistency
         run: |
-          dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.2 version-manager validate-version
+          dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 version-manager validate-version
       
       - name: Sync version to all files
         run: |
-          dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.2 version-manager sync-version export --path=.
-          dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.2 version-manager sync-version \
+          dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 version-manager sync-version export --path=.
+          dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 version-manager sync-version \
             --target-file=pyproject.toml \
             --version-pattern='^version\s*=\s*".*"' \
             export --path=.
@@ -316,10 +316,10 @@ release:
     - curl -fsSL https://dl.dagger.io/dagger/install.sh | sh
     - mv bin/dagger /usr/local/bin/
   script:
-    - VERSION=$(dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.2 version-manager get-version)
+    - VERSION=$(dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 version-manager get-version)
     - echo "Releasing version $VERSION"
-    - dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.2 version-manager validate-version
-    - dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.2 version-manager sync-version export --path=.
+    - dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 version-manager validate-version
+    - dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 version-manager sync-version export --path=.
     - |
       git config user.name "gitlab-ci"
       git config user.email "gitlab-ci@gitlab.com"
@@ -354,7 +354,7 @@ pipeline {
             steps {
                 script {
                     env.VERSION = sh(
-                        script: 'dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.2 version-manager get-version',
+                        script: 'dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 version-manager get-version',
                         returnStdout: true
                     ).trim()
                     echo "Version: ${env.VERSION}"
@@ -364,13 +364,13 @@ pipeline {
         
         stage('Validate') {
             steps {
-                sh 'dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.2 version-manager validate-version'
+                sh 'dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 version-manager validate-version'
             }
         }
         
         stage('Sync Version') {
             steps {
-                sh 'dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.2 version-manager sync-version export --path=.'
+                sh 'dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 version-manager sync-version export --path=.'
             }
         }
         
@@ -399,7 +399,7 @@ pipeline {
 To install hooks in any project without cloning this repo:
 
 ```bash
-dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.2 \
+dagger call -m github.com/SolomonHD/dagger-version-manager@v1.0.3 \
   setup-git-hooks --source=. export --path=.
 ```
 
@@ -461,7 +461,7 @@ View hook content:
 head .git/hooks/pre-commit
 # Output:
 # #!/bin/bash
-# # DAGGER-VERSION-MANAGER: v1.0.1
+# # DAGGER-VERSION-MANAGER: v1.0.3
 # # Installed: 2025-11-24T20:17:01.345087Z
 # #
 # # This hook validates version consistency before pre commit.
