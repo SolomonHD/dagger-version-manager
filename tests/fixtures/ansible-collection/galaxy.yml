@@ -1,0 +1,12 @@
+namespace: test
+name: collection
+version: 1.0.0
+readme: README.md
+authors:
+  - Test Author
+description: Test collection for version manager
+license:
+  - MIT
+tags:
+  - test
+repository: https://github.com/test/collection
