@@ -9,6 +9,7 @@ Many projects maintain version numbers across multiple configuration files:
 - **Python projects**: `VERSION` + `pyproject.toml`
 - **Docker projects**: `VERSION` + `Dockerfile` labels
 - **Kubernetes**: `VERSION` + Helm `Chart.yaml`
+- **Packer plugins**: `version/VERSION` + other config files
 
 Manually keeping these in sync is tedious and error-prone. This Dagger module automates the process.
 
@@ -21,6 +22,7 @@ Manually keeping these in sync is tedious and error-prone. This Dagger module au
 - ✅ **Release Workflow**: Complete release automation with git command generation
 - ✅ **Flexible Patterns**: Custom regex patterns for any file format
 - ✅ **Semantic Versioning**: Strict X.Y.Z format enforcement
+- ✅ **Auto-Detection**: Automatically finds VERSION file at root or in `version/` subdirectory
 
 ## Installation
 
@@ -33,7 +35,7 @@ dagger install github.com/SolomonHD/dagger-version-manager@main
 Or install a specific version:
 
 ```bash
-dagger install github.com/SolomonHD/dagger-version-manager@v1.1.0
+dagger install github.com/SolomonHD/dagger-version-manager@v1.2.0
 ```
 
 ## Quick Start
@@ -42,11 +44,20 @@ dagger install github.com/SolomonHD/dagger-version-manager@v1.1.0
 
 > **Note:** These examples assume you've installed the module in your project using `dagger install`. If you're developing locally within this repository, omit the `-m version-manager` flag. For remote usage without installation, use the full GitHub URL pattern (see [EXAMPLES.md](EXAMPLES.md) for details).
 
+### VERSION File Auto-Detection
+
+The module automatically detects your VERSION file location:
+- Checks `./VERSION` (project root) first
+- Falls back to `./version/VERSION` (Packer plugin convention)
+- Returns an error if both exist (you must specify which one to use)
+- Returns an error if neither exists
+
 ### 1. Get Current Version
 
 ```bash
 dagger call -m version-manager get-version --source=.
 # Output: 1.2.3
+# Works with VERSION at root OR version/VERSION
 ```
 
 ### 2. Sync Version to Target File
@@ -124,7 +135,7 @@ Use `-m version-manager` (the module name from [`dagger.json`](dagger.json)) and
 ### Context C: Remote Module
 Calling directly without installation:
 ```bash
-dagger call -m github.com/SolomonHD/dagger-version-manager@v1.1.0 version-manager get-version --source=.
+dagger call -m github.com/SolomonHD/dagger-version-manager@v1.2.0 version-manager get-version --source=.
 ```
 Use `-m <repo-url>@<version> <module-name>` pattern with `--source=.`.
 
@@ -142,9 +153,24 @@ For comprehensive examples, function reference, and advanced workflows (includin
 
 ## Requirements
 
-- **Dagger Engine**: v0.19.2 or higher
+- **Dagger Engine**: v0.19.7 or higher
 - **Python**: 3.11+ (provided by Dagger container)
 - **Git**: Only needed on your machine for manual tag operations
+
+## VERSION File Locations
+
+The module supports two standard VERSION file locations:
+
+| Location | Project Type | Example |
+|----------|-------------|---------|
+| `./VERSION` | Most projects | Ansible collections, Python packages |
+| `./version/VERSION` | Packer plugins | HashiCorp Packer plugins |
+
+When both files exist, you must explicitly specify which to use:
+```bash
+dagger call -m version-manager get-version --source=. --version-file=VERSION
+dagger call -m version-manager get-version --source=. --version-file=version/VERSION
+```
 
 ## Version Format
 

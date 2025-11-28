@@ -32,23 +32,101 @@ class VersionManager:
             return True, ""
         return False, f"❌ Invalid version format: {version.strip()} (expected X.Y.Z)"
 
-    async def _read_version_file(
+    async def _file_exists(
+        self,
+        source: dagger.Directory,
+        file_path: str
+    ) -> bool:
+        """
+        Check if a file exists in the directory.
+        
+        Args:
+            source: Directory to check
+            file_path: Path to the file
+            
+        Returns:
+            True if file exists, False otherwise
+        """
+        try:
+            await source.file(file_path).contents()
+            return True
+        except Exception:
+            return False
+
+    async def _resolve_version_file(
         self,
         source: dagger.Directory,
         version_file: str
     ) -> tuple[Optional[str], Optional[str]]:
         """
-        Read version from the source file.
+        Resolve the version file path, auto-detecting common locations.
+        
+        When version_file is "VERSION" (the default), checks both:
+        - VERSION at project root
+        - version/VERSION in subdirectory
         
         Args:
             source: Directory containing the version file
             version_file: Name of the version file
             
         Returns:
+            Tuple of (resolved_path, error_message)
+        """
+        # Only auto-detect when using the default value
+        if version_file != "VERSION":
+            return version_file, None
+        
+        # Check both locations
+        root_exists = await self._file_exists(source, "VERSION")
+        subdir_exists = await self._file_exists(source, "version/VERSION")
+        
+        # Handle the four cases
+        if root_exists and subdir_exists:
+            # Ambiguity error
+            error_msg = (
+                "❌ Ambiguous VERSION files detected:\n"
+                "   Found both ./VERSION and ./version/VERSION\n"
+                "   Specify which to use: --version-file=VERSION or --version-file=version/VERSION"
+            )
+            return None, error_msg
+        elif root_exists:
+            return "VERSION", None
+        elif subdir_exists:
+            return "version/VERSION", None
+        else:
+            # Neither file exists
+            error_msg = (
+                "❌ No VERSION file found\n"
+                "   Checked: ./VERSION, ./version/VERSION\n"
+                "   Create a VERSION file with format X.Y.Z (e.g., 1.0.0)"
+            )
+            return None, error_msg
+
+    async def _read_version_file(
+        self,
+        source: dagger.Directory,
+        version_file: str
+    ) -> tuple[Optional[str], Optional[str]]:
+        """
+        Read version from the source file with auto-detection support.
+        
+        When version_file is "VERSION" (the default), automatically detects
+        whether the file is at the project root or in a version/ subdirectory.
+        
+        Args:
+            source: Directory containing the version file
+            version_file: Name of the version file (auto-detected if "VERSION")
+            
+        Returns:
             Tuple of (version_string, error_message)
         """
+        # Resolve the version file path (with auto-detection)
+        resolved_path, error = await self._resolve_version_file(source, version_file)
+        if error:
+            return None, error
+        
         try:
-            content = await source.file(version_file).contents()
+            content = await source.file(resolved_path).contents()
             version = content.strip()
             
             is_valid, error = self._validate_semver(version)
@@ -58,8 +136,8 @@ class VersionManager:
             return version, None
         except Exception as e:
             error_msg = (
-                f"❌ Failed to read {version_file}: {str(e)}\n"
-                f"   Create a {version_file} file with format X.Y.Z (e.g., 1.0.0)"
+                f"❌ Failed to read {resolved_path}: {str(e)}\n"
+                f"   Create a {resolved_path} file with format X.Y.Z (e.g., 1.0.0)"
             )
             return None, error_msg
 
@@ -121,22 +199,26 @@ class VersionManager:
         ],
         version_file: Annotated[
             str,
-            Doc("Name of the version file")
+            Doc("Name of the version file (auto-detects VERSION or version/VERSION)")
         ] = "VERSION"
     ) -> str:
         """
         Read and return the current version from the version file.
         
+        Supports auto-detection: when using the default "VERSION", automatically
+        checks both ./VERSION and ./version/VERSION locations. Returns an error
+        if both exist (ambiguous) or neither exists.
+        
         Args:
             source: Source directory (required, use --source=. for your project)
-            version_file: Name of the version file (default: VERSION)
+            version_file: Name of the version file (default: VERSION with auto-detection)
             
         Returns:
             Version string or error message
             
         Example:
             dagger call get-version --source=.
-            dagger call get-version --source=. --version-file=MY_VERSION
+            dagger call get-version --source=. --version-file=version/VERSION
         """
         version, error = await self._read_version_file(source, version_file)
         
@@ -154,7 +236,7 @@ class VersionManager:
         ],
         version_file: Annotated[
             str,
-            Doc("Name of the source version file")
+            Doc("Name of the source version file (auto-detects VERSION or version/VERSION)")
         ] = "VERSION",
         target_file: Annotated[
             str,
@@ -168,9 +250,12 @@ class VersionManager:
         """
         Validate that version in source file matches version in target file.
         
+        Supports auto-detection: when using the default "VERSION", automatically
+        checks both ./VERSION and ./version/VERSION locations.
+        
         Args:
             source: Source directory (required, use --source=. for your project)
-            version_file: Name of the source version file (default: VERSION)
+            version_file: Name of the source version file (default: VERSION with auto-detection)
             target_file: Name of the target file to check (default: galaxy.yml)
             version_pattern: Regex pattern to match version line (default: r'^version:.*$')
             
@@ -222,7 +307,7 @@ class VersionManager:
         ],
         version_file: Annotated[
             str,
-            Doc("Name of the source version file")
+            Doc("Name of the source version file (auto-detects VERSION or version/VERSION)")
         ] = "VERSION",
         target_file: Annotated[
             str,
@@ -239,9 +324,12 @@ class VersionManager:
         Reads version from source file and updates the matching line in target file
         according to the specified pattern.
         
+        Supports auto-detection: when using the default "VERSION", automatically
+        checks both ./VERSION and ./version/VERSION locations.
+        
         Args:
             source: Source directory (required, use --source=. for your project)
-            version_file: Name of the source version file (default: VERSION)
+            version_file: Name of the source version file (default: VERSION with auto-detection)
             target_file: Name of the target file to update (default: galaxy.yml)
             version_pattern: Regex pattern to match version line (default: r'^version:.*$')
             
@@ -317,7 +405,7 @@ class VersionManager:
         ],
         version_file: Annotated[
             str,
-            Doc("Name of the version file to update")
+            Doc("Name of the version file to update (auto-detects VERSION or version/VERSION)")
         ] = "VERSION"
     ) -> dagger.Directory:
         """
@@ -327,10 +415,13 @@ class VersionManager:
         - minor: X.Y.Z → X.(Y+1).0
         - patch: X.Y.Z → X.Y.(Z+1)
         
+        Supports auto-detection: when using the default "VERSION", automatically
+        checks both ./VERSION and ./version/VERSION locations.
+        
         Args:
             source: Source directory (required, use --source=. for your project)
             bump_type: Type of bump (major, minor, or patch)
-            version_file: Name of the version file (default: VERSION)
+            version_file: Name of the version file (default: VERSION with auto-detection)
             
         Returns:
             Updated directory with bumped version
@@ -340,6 +431,11 @@ class VersionManager:
             dagger call bump-version --source=. --bump-type=minor export --path=.
             dagger call bump-version --source=. --bump-type=major export --path=.
         """
+        # Resolve the version file path first (with auto-detection)
+        resolved_path, error = await self._resolve_version_file(source, version_file)
+        if error:
+            raise Exception(error)
+        
         # Read current version
         current_version, error = await self._read_version_file(source, version_file)
         if error:
@@ -350,8 +446,8 @@ class VersionManager:
         if error:
             raise Exception(error)
         
-        # Write new version
-        updated_dir = source.with_new_file(version_file, new_version)
+        # Write new version to the resolved path
+        updated_dir = source.with_new_file(resolved_path, new_version)
         
         return updated_dir
 
@@ -364,7 +460,7 @@ class VersionManager:
         ],
         version_file: Annotated[
             str,
-            Doc("Name of the source version file")
+            Doc("Name of the source version file (auto-detects VERSION or version/VERSION)")
         ] = "VERSION",
         target_file: Annotated[
             str,
@@ -387,9 +483,12 @@ class VersionManager:
         2. Validating consistency
         3. Generating git commands for manual execution
         
+        Supports auto-detection: when using the default "VERSION", automatically
+        checks both ./VERSION and ./version/VERSION locations.
+        
         Args:
             source: Source directory (required, use --source=. for your project)
-            version_file: Name of the source version file (default: VERSION)
+            version_file: Name of the source version file (default: VERSION with auto-detection)
             target_file: Name of the target file to sync (default: galaxy.yml)
             version_pattern: Regex pattern to match version line
             tag_message: Custom git tag message (optional)
@@ -401,6 +500,11 @@ class VersionManager:
             dagger call release --source=.
             dagger call release --source=. --tag-message="Major release with breaking changes"
         """
+        # Resolve version file path for git commands
+        resolved_path, error = await self._resolve_version_file(source, version_file)
+        if error:
+            return error
+        
         # Read version
         version, error = await self._read_version_file(source, version_file)
         if error:
@@ -426,7 +530,7 @@ class VersionManager:
             version_pattern=version_pattern
         )
         
-        # Generate git commands
+        # Generate git commands using resolved path
         tag_msg = tag_message or f"Release {version}"
         
         result = f"""🚀 Release {version} Ready
@@ -436,7 +540,7 @@ class VersionManager:
 
 Next steps (run these commands manually):
 
-  git add {version_file} {target_file}
+  git add {resolved_path} {target_file}
   git commit -m "Release {version}"
   git tag -a v{version} -m "{tag_msg}"
   git push && git push --tags
