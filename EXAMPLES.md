@@ -285,17 +285,17 @@ jobs:
       - name: Get version
         id: version
         run: |
-          VERSION=$(dagger call -m github.com/SolomonHD/dagger-version-manager@v1.1.0 version-manager get-version --source=.)
+          VERSION=$(dagger call -m github.com/SolomonHD/dagger-version-manager@v1.2.0 version-manager get-version --source=.)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
       
       - name: Validate version consistency
         run: |
-          dagger call -m github.com/SolomonHD/dagger-version-manager@v1.1.0 version-manager validate-version --source=.
+          dagger call -m github.com/SolomonHD/dagger-version-manager@v1.2.0 version-manager validate-version --source=.
       
       - name: Sync version to all files
         run: |
-          dagger call -m github.com/SolomonHD/dagger-version-manager@v1.1.0 version-manager sync-version --source=. export --path=.
-          dagger call -m github.com/SolomonHD/dagger-version-manager@v1.1.0 version-manager sync-version \
+          dagger call -m github.com/SolomonHD/dagger-version-manager@v1.2.0 version-manager sync-version --source=. export --path=.
+          dagger call -m github.com/SolomonHD/dagger-version-manager@v1.2.0 version-manager sync-version \
             --source=. \
             --target-file=pyproject.toml \
             --version-pattern='^version\s*=\s*".*"' \
@@ -327,10 +327,10 @@ release:
     - curl -fsSL https://dl.dagger.io/dagger/install.sh | sh
     - mv bin/dagger /usr/local/bin/
   script:
-    - VERSION=$(dagger call -m github.com/SolomonHD/dagger-version-manager@v1.1.0 version-manager get-version --source=.)
+    - VERSION=$(dagger call -m github.com/SolomonHD/dagger-version-manager@v1.2.0 version-manager get-version --source=.)
     - echo "Releasing version $VERSION"
-    - dagger call -m github.com/SolomonHD/dagger-version-manager@v1.1.0 version-manager validate-version --source=.
-    - dagger call -m github.com/SolomonHD/dagger-version-manager@v1.1.0 version-manager sync-version --source=. export --path=.
+    - dagger call -m github.com/SolomonHD/dagger-version-manager@v1.2.0 version-manager validate-version --source=.
+    - dagger call -m github.com/SolomonHD/dagger-version-manager@v1.2.0 version-manager sync-version --source=. export --path=.
     - |
       git config user.name "gitlab-ci"
       git config user.email "gitlab-ci@gitlab.com"
@@ -365,7 +365,7 @@ pipeline {
             steps {
                 script {
                     env.VERSION = sh(
-                        script: 'dagger call -m github.com/SolomonHD/dagger-version-manager@v1.1.0 version-manager get-version --source=.',
+                        script: 'dagger call -m github.com/SolomonHD/dagger-version-manager@v1.2.0 version-manager get-version --source=.',
                         returnStdout: true
                     ).trim()
                     echo "Version: ${env.VERSION}"
@@ -375,13 +375,13 @@ pipeline {
         
         stage('Validate') {
             steps {
-                sh 'dagger call -m github.com/SolomonHD/dagger-version-manager@v1.1.0 version-manager validate-version --source=.'
+                sh 'dagger call -m github.com/SolomonHD/dagger-version-manager@v1.2.0 version-manager validate-version --source=.'
             }
         }
         
         stage('Sync Version') {
             steps {
-                sh 'dagger call -m github.com/SolomonHD/dagger-version-manager@v1.1.0 version-manager sync-version --source=. export --path=.'
+                sh 'dagger call -m github.com/SolomonHD/dagger-version-manager@v1.2.0 version-manager sync-version --source=. export --path=.'
             }
         }
         
@@ -410,7 +410,7 @@ pipeline {
 To install hooks in any project without cloning this repo:
 
 ```bash
-dagger call -m github.com/SolomonHD/dagger-version-manager@v1.1.0 \
+dagger call -m github.com/SolomonHD/dagger-version-manager@v1.2.0 \
   version-manager setup-git-hooks --source=. export --path=.
 ```
 
@@ -766,13 +766,27 @@ make release
 Read the current version from the version file.
 
 **Parameters:**
-- `--source` (optional): Source directory (defaults to current module)
-- `--version-file` (optional): Version file name (default: `VERSION`)
+- `--source` (required): Source directory (use `--source=.` for your project)
+- `--version-file` (optional): Version file name (default: `VERSION` with auto-detection)
+
+**Auto-Detection Behavior:**
+When using the default `VERSION`, the module automatically checks:
+1. `./VERSION` at project root
+2. `./version/VERSION` in subdirectory
+
+If both files exist, you must specify which one to use:
+```bash
+dagger call -m version-manager get-version --source=. --version-file=VERSION
+dagger call -m version-manager get-version --source=. --version-file=version/VERSION
+```
 
 **Example:**
 ```bash
-dagger call version-manager get-version --source=.
-dagger call version-manager get-version --source=. --version-file=MY_VERSION
+# Auto-detects VERSION file location
+dagger call -m version-manager get-version --source=.
+
+# Explicit path (skips auto-detection)
+dagger call -m version-manager get-version --source=. --version-file=version/VERSION
 ```
 
 ### `validate-version`
@@ -780,15 +794,17 @@ dagger call version-manager get-version --source=. --version-file=MY_VERSION
 Check if version in source file matches target file.
 
 **Parameters:**
-- `--source` (optional): Source directory
-- `--version-file` (optional): Source version file (default: `VERSION`)
+- `--source` (required): Source directory (use `--source=.` for your project)
+- `--version-file` (optional): Source version file (default: `VERSION` with auto-detection)
 - `--target-file` (optional): Target file to check (default: `galaxy.yml`)
 - `--version-pattern` (optional): Regex pattern to match version line (default: `r'^version:.*$'`)
 
+**Auto-Detection:** Same behavior as `get-version` for finding VERSION file.
+
 **Example:**
 ```bash
-dagger call version-manager validate-version --source=.
-dagger call version-manager validate-version \
+dagger call -m version-manager validate-version --source=.
+dagger call -m version-manager validate-version \
   --source=. \
   --target-file=pyproject.toml \
   --version-pattern='^version\s*=\s*".*"'
@@ -799,15 +815,17 @@ dagger call version-manager validate-version \
 Synchronize version from source to target file.
 
 **Parameters:**
-- `--source` (optional): Source directory
-- `--version-file` (optional): Source version file (default: `VERSION`)
+- `--source` (required): Source directory (use `--source=.` for your project)
+- `--version-file` (optional): Source version file (default: `VERSION` with auto-detection)
 - `--target-file` (optional): Target file to update (default: `galaxy.yml`)
 - `--version-pattern` (optional): Regex pattern to match version line (default: `r'^version:.*$'`)
 
+**Auto-Detection:** Same behavior as `get-version` for finding VERSION file.
+
 **Example:**
 ```bash
-dagger call version-manager sync-version --source=. export --path=.
-dagger call version-manager sync-version \
+dagger call -m version-manager sync-version --source=. export --path=.
+dagger call -m version-manager sync-version \
   --source=. \
   --target-file=Dockerfile \
   --version-pattern='LABEL version=".*"' \
@@ -822,19 +840,21 @@ Increment version according to semantic versioning rules.
 
 **Parameters:**
 - `--bump-type` (required): Type of bump: `major`, `minor`, or `patch`
-- `--source` (optional): Source directory
-- `--version-file` (optional): Version file to update (default: `VERSION`)
+- `--source` (required): Source directory (use `--source=.` for your project)
+- `--version-file` (optional): Version file to update (default: `VERSION` with auto-detection)
+
+**Auto-Detection:** Same behavior as `get-version` for finding VERSION file. The version is written back to the auto-detected location.
 
 **Examples:**
 ```bash
 # Patch: 1.2.3 → 1.2.4
-dagger call version-manager bump-version --source=. --bump-type=patch export --path=.
+dagger call -m version-manager bump-version --source=. --bump-type=patch export --path=.
 
 # Minor: 1.2.3 → 1.3.0
-dagger call version-manager bump-version --source=. --bump-type=minor export --path=.
+dagger call -m version-manager bump-version --source=. --bump-type=minor export --path=.
 
 # Major: 1.2.3 → 2.0.0
-dagger call version-manager bump-version --source=. --bump-type=major export --path=.
+dagger call -m version-manager bump-version --source=. --bump-type=major export --path=.
 ```
 
 **Note:** Must use `export --path=.` to write changes back to your filesystem.
@@ -876,16 +896,18 @@ dagger call setup-git-hooks --source=. export --path=.
 Complete release workflow with git command generation.
 
 **Parameters:**
-- `--source` (optional): Source directory
-- `--version-file` (optional): Source version file (default: `VERSION`)
+- `--source` (required): Source directory (use `--source=.` for your project)
+- `--version-file` (optional): Source version file (default: `VERSION` with auto-detection)
 - `--target-file` (optional): Target file to sync (default: `galaxy.yml`)
 - `--version-pattern` (optional): Regex pattern
 - `--tag-message` (optional): Custom git tag message
 
+**Auto-Detection:** Same behavior as `get-version` for finding VERSION file. Git commands will reference the correct path.
+
 **Example:**
 ```bash
-dagger call version-manager release --source=.
-dagger call version-manager release \
+dagger call -m version-manager release --source=.
+dagger call -m version-manager release \
   --source=. \
   --tag-message="Major release with breaking changes"
 ```
